@@ -144,6 +144,15 @@ bool check(char *src, char *dest)
 		}
 	}
 	
+	if (!fs.eof())
+	{
+		fs >> temps;
+	}
+	if (!fd.eof())
+	{
+		fd >> tempd;
+	}
+	
 	if (!fs.eof() || !fd.eof())
 	{
 		return false;
