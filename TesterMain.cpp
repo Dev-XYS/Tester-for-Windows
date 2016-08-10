@@ -10,15 +10,21 @@
 #define COLOR_AC 0
 #define COLOR_WA 1
 #define COLOR_RE 2
+#define COLOR_TLE 3
 
 using namespace std;
 
-int casec;
+int casec, maxtime;
 char name[100], ord[100], temp[100], temps[100], tempd[100], runf[100];
+
+PROCESS_INFORMATION pi;
+bool working, istle;
+unsigned long ret;
 
 void copy(char *file, char *tar);
 bool check(char *src, char *dest);
 void setcolor(int color);
+void runprogram();
 
 int main()
 {
@@ -29,6 +35,8 @@ int main()
 		scanf("%s", name);
 		printf("Please insert the testcase count:\n");
 		scanf("%d", &casec);
+		printf("Please insert the time limit (ms):\n");
+		scanf("%d", &maxtime);
 		printf("Press any key to start testing...\n");
 		getch();
 		
@@ -51,10 +59,20 @@ int main()
 			
 			// Running.
 			printf("Running for testcase #%2d... ", i);
+			istle = false;
+			working = false;
 			int starttime = clock();
-			int ret = system(runf);
+			runprogram();
 			int endtime = clock();
 			
+			if (istle == true)
+			{
+				setcolor(COLOR_TLE);
+				printf("TLE ");
+				setcolor(COLOR_NONE);
+				printf("---- ms\n");
+				goto END;
+			}
 			if (ret != 0)
 			{
 				setcolor(COLOR_RE);
@@ -85,6 +103,8 @@ int main()
 			
 			SHOWTIME:
 			printf("%4d ms\n", endtime - starttime);
+			
+			END:;
 		}
 		
 		printf("\n");
@@ -153,4 +173,26 @@ void setcolor(int color)
 	{
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 	}
+	else if (color == COLOR_TLE)
+	{
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+	}
+}
+
+void runprogram()
+{
+	STARTUPINFOA si;
+	ZeroMemory(&si, sizeof(si));
+	ZeroMemory(&pi, sizeof(pi));
+	working = CreateProcess(NULL, runf, NULL, NULL, false, NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi);
+	if (working == false)
+	{
+		return;
+	}
+	if (WaitForSingleObject(pi.hProcess, maxtime) == WAIT_TIMEOUT)
+	{
+		TerminateProcess(pi.hProcess, 0);
+		istle = true;
+	}
+	GetExitCodeProcess(pi.hProcess, &ret);
 }
