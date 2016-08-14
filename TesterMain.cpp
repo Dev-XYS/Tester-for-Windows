@@ -140,6 +140,8 @@ bool check(char *src, char *dest)
 		fd >> tempd;
 		if (strcmp(temps, tempd) != 0)
 		{
+			fs.close();
+			fd.close();
 			return false;
 		}
 	}
@@ -147,20 +149,26 @@ bool check(char *src, char *dest)
 	if (!fs.eof())
 	{
 		fs >> temps;
+		if (strcmp(temps, "") != 0)
+		{
+			fs.close();
+			fd.close();
+			return false;
+		}
 	}
 	if (!fd.eof())
 	{
 		fd >> tempd;
-	}
-	
-	if (!fs.eof() || !fd.eof())
-	{
-		return false;
+		if (strcmp(tempd, "") != 0)
+		{
+			fs.close();
+			fd.close();
+			return false;
+		}
 	}
 	
 	fs.close();
 	fd.close();
-	
 	return true;
 }
 
