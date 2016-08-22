@@ -148,6 +148,7 @@ bool check(char *src, char *dest)
 	
 	if (!fs.eof())
 	{
+		strcpy(temps, ""); 
 		fs >> temps;
 		if (strcmp(temps, "") != 0)
 		{
@@ -158,6 +159,7 @@ bool check(char *src, char *dest)
 	}
 	if (!fd.eof())
 	{
+		strcpy(tempd, "");
 		fd >> tempd;
 		if (strcmp(tempd, "") != 0)
 		{
