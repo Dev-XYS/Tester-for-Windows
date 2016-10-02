@@ -1,11 +1,28 @@
+/*********************************************************
+* TesterMain.cpp (c) 2016 Dev-XYS. All rights reserved. *
+* Version : 2.0.0.6                                     *
+*********************************************************/
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
 #include <conio.h>
+#include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <ctime>
 #include <windows.h>
+#include <string>
 
+#pragma warning (disable : 4996)
+
+// Result definitions.
+#define RESULT_NONE -1
+#define RESULT_RE 2
+#define RESULT_TLE 3
+#define RESULT_SF 4
+
+// Console color definitions.
 #define COLOR_NONE -1
 #define COLOR_AC 0
 #define COLOR_WA 1
@@ -14,126 +31,90 @@
 
 using namespace std;
 
-int casec, maxtime;
-char name[100], ord[100], temp[100], temps[100], tempd[100], runf[100];
+// Represent a problem.
+struct problem
+{
+	string name;
+	int testcase, timelimit;
+};
 
-PROCESS_INFORMATION pi;
-bool working, istle;
-unsigned long ret;
+// Command functions.
+void cmd_config();
 
-void copy(char *file, char *tar);
-bool check(char *src, char *dest);
+// Other functions.
 void setcolor(int color);
-void runprogram();
+
+// Variables.
+string cmd;
 
 int main()
 {
+	// Printf copyright.
+	printf("TesterMain (c) 2016 Dev-XYS. All rights reserved.\n");
+	printf("Repository URL : github.com/Dev-XYS/Tester\n\n");
+
 	while (true)
 	{
-		// Input.
-		printf("Please insert the problem name:\n");
-		scanf("%s", name);
-		printf("Please insert the testcase count:\n");
-		scanf("%d", &casec);
-		printf("Please insert the time limit (ms):\n");
-		scanf("%d", &maxtime);
-		printf("Press any key to start testing...\n");
-		getch();
-		
-		// Copy .exe name.
-		strcpy(runf, name);
-		strcat(runf, ".exe");
-		
-		// Running and checking.
-		for (int i = 1; i <= casec; i++)
+		// Wait for command.
+		cout << "test->";
+		cin >> cmd;
+
+		if (cmd == "default")
 		{
-			// Copy .in and .out.
-			itoa(i, ord, 10);
-			
-			strcpy(temps, name);
-			strcpy(tempd, name);
-			strcat(temps, ord);
-			strcat(temps, ".in");
-			strcat(tempd, ".in");
-			copy(temps, tempd);
-			
-			// Running.
-			printf("Running for testcase #%2d... ", i);
-			istle = false;
-			working = false;
-			int starttime = clock();
-			runprogram();
-			int endtime = clock();
-			
-			if (istle == true)
-			{
-				setcolor(COLOR_TLE);
-				printf("TLE ");
-				setcolor(COLOR_NONE);
-				printf("---- ms\n");
-				goto END;
-			}
-			if (ret != 0)
-			{
-				setcolor(COLOR_RE);
-				printf("RE  ");
-				setcolor(COLOR_NONE);
-				goto SHOWTIME;
-			}
-			
-			// Checking.
-			strcpy(temps, name);
-			strcat(temps, ord);
-			strcat(temps, ".ans");
-			strcpy(tempd, name);
-			strcat(tempd, ".out");
-			
-			if (check(temps, tempd) == true)
-			{
-				setcolor(COLOR_AC);
-				printf("AC  ");
-				setcolor(COLOR_NONE);
-			}
-			else
-			{
-				setcolor(COLOR_WA);
-				printf("WA  ");
-				setcolor(COLOR_NONE);
-			}
-			
-			SHOWTIME:
-			printf("%4d ms\n", endtime - starttime);
-			
-			END:;
+			//cmd_default();
 		}
-		
-		printf("\n");
+		else if (cmd == "config")
+		{
+			cmd_config();
+		}
 	}
-	
+
 	return 0;
 }
 
-void copy(char *file, char *tar)
+void copy(string src, string dest)
 {
 	ofstream fout;
 	ifstream fin;
-	
-	fout.open(tar, ios::binary);
-	fin.open(file, ios::binary);
-	
+
+	fin.open(src, ios::binary);
+	fout.open(dest, ios::binary);
+
 	fout << fin.rdbuf();
-	
-	fout.close();
+
 	fin.close();
+	fout.close();
 }
 
-bool check(char *src, char *dest)
+int runprogram(string exef, int timelim)
+{
+	STARTUPINFOA si;
+	PROCESS_INFORMATION pi;
+	ZeroMemory(&si, sizeof(si));
+	ZeroMemory(&pi, sizeof(pi));
+	BOOL working = CreateProcess(NULL, (char *)exef.c_str(), NULL, NULL, false, NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi);
+	if (working == false)
+	{
+		return RESULT_SF;
+	}
+	if (WaitForSingleObject(pi.hProcess, timelim) == WAIT_TIMEOUT)
+	{
+		TerminateProcess(pi.hProcess, 0);
+		return RESULT_TLE;
+	}
+	unsigned long ret;
+	GetExitCodeProcess(pi.hProcess, &ret);
+	return ret == 0 ? RESULT_NONE : RESULT_RE;
+}
+
+bool check(string src, string dest)
 {
 	ifstream fs, fd;
-	
+	char temps[1024], tempd[1024];
+
 	fs.open(src);
 	fd.open(dest);
-	
+
 	while (!fs.eof() && !fd.eof())
 	{
 		fs >> temps;
@@ -145,10 +126,10 @@ bool check(char *src, char *dest)
 			return false;
 		}
 	}
-	
+
 	if (!fs.eof())
 	{
-		strcpy(temps, ""); 
+		strcpy(temps, "");
 		fs >> temps;
 		if (strcmp(temps, "") != 0)
 		{
@@ -168,10 +149,116 @@ bool check(char *src, char *dest)
 			return false;
 		}
 	}
-	
+
 	fs.close();
 	fd.close();
 	return true;
+}
+
+void cmd_config()
+{
+	string conf, comps[50];
+	int probc, compc;
+	problem probs[10];
+	char ord[10];
+	ifstream coni;
+
+	printf("Please insert the config file name:\n");
+	cin >> conf;
+
+	// Open the config file.
+	coni.open(conf);
+
+	// Read in problems and competitors.
+	coni >> probc;
+	for (int i = 0; i < probc; i++)
+	{
+		coni >> probs[i].name >> probs[i].testcase >> probs[i].timelimit;
+	}
+	coni >> compc;
+	for (int i = 0; i < compc; i++)
+	{
+		coni >> comps[i];
+	}
+
+	// Copying and checking.
+	for (int k = 0; k < compc; k++)
+	{
+		// Copying .exe files.
+		for (int i = 0; i < probc; i++)
+		{
+			copy("src/" + comps[k] + '/' + probs[i].name + ".exe", "data/" + probs[i].name + ".exe");
+		}
+
+		// Running and checking.
+		for (int i = 0; i < probc; i++)
+		{
+			for (int j = 1; j <= probs[i].testcase; j++)
+			{
+				// Copy .in and .out files.
+				itoa(j, ord, 10);
+
+				copy("data/" + probs[i].name + ord + ".in", probs[i].name + ".in");
+
+				// Running.
+				cout << "Running for testcase #" << right << setw(3) << j << "... ";
+				int starttime = clock();
+				cout << "Running " << probs[i].name << ".exe" << endl;
+				int result = runprogram("data/" + probs[i].name + ".exe", probs[i].timelimit);
+				int endtime = clock();
+
+				if (result == RESULT_TLE)
+				{
+					setcolor(COLOR_TLE);
+					cout << "TLE ";
+					setcolor(COLOR_NONE);
+					cout << "---- ms\n";
+					goto END;
+				}
+				if (result == RESULT_RE)
+				{
+					setcolor(COLOR_RE);
+					cout << "RE  ";
+					setcolor(COLOR_NONE);
+					goto SHOWTIME;
+				}
+
+				// Checking.
+				if (check(probs[i].name + ".out", "data/" + probs[i].name + ord + ".ans") == true)
+				{
+					setcolor(COLOR_AC);
+					printf("AC  ");
+					setcolor(COLOR_NONE);
+				}
+				else
+				{
+					setcolor(COLOR_WA);
+					printf("WA  ");
+					setcolor(COLOR_NONE);
+				}
+
+			SHOWTIME:
+				printf("%4d ms\n", endtime - starttime);
+
+			END:;
+
+				// Deleting .out file.
+				remove((probs[i].name + ".out").c_str());
+			}
+		}
+
+		// Deleting .exe files.
+		for (int i = 0; i < probc; i++)
+		{
+			remove(("data/" + probs[i].name + ".exe").c_str());
+		}
+	}
+
+	// Deleting .in files.
+	for (int i = 0; i < probc; i++)
+	{
+		remove((probs[i].name + ".in").c_str());
+	}
 }
 
 void setcolor(int color)
@@ -196,22 +283,4 @@ void setcolor(int color)
 	{
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 	}
-}
-
-void runprogram()
-{
-	STARTUPINFOA si;
-	ZeroMemory(&si, sizeof(si));
-	ZeroMemory(&pi, sizeof(pi));
-	working = CreateProcess(NULL, runf, NULL, NULL, false, NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi);
-	if (working == false)
-	{
-		return;
-	}
-	if (WaitForSingleObject(pi.hProcess, maxtime) == WAIT_TIMEOUT)
-	{
-		TerminateProcess(pi.hProcess, 0);
-		istle = true;
-	}
-	GetExitCodeProcess(pi.hProcess, &ret);
 }
