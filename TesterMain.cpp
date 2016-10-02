@@ -29,6 +29,8 @@
 #define COLOR_RE 2
 #define COLOR_TLE 3
 
+#define COLOR_PROBLEMNAME 16
+
 using namespace std;
 
 // Represent a problem.
@@ -84,6 +86,11 @@ void copy(string src, string dest)
 
 	fin.close();
 	fout.close();
+}
+
+void compile(string src)
+{
+
 }
 
 int runprogram(string exef, int timelim)
@@ -158,13 +165,14 @@ bool check(string src, string dest)
 void cmd_config()
 {
 	string conf, comps[50];
-	int probc, compc;
+	int probc, compc, pr_cnt = 0, ac_cnt;
 	problem probs[10];
 	char ord[10];
 	ifstream coni;
 
 	printf("Please insert the config file name:\n");
 	cin >> conf;
+	cout << endl;
 
 	// Open the config file.
 	coni.open(conf);
@@ -174,6 +182,7 @@ void cmd_config()
 	for (int i = 0; i < probc; i++)
 	{
 		coni >> probs[i].name >> probs[i].testcase >> probs[i].timelimit;
+		pr_cnt += probs[i].testcase;
 	}
 	coni >> compc;
 	for (int i = 0; i < compc; i++)
@@ -184,6 +193,11 @@ void cmd_config()
 	// Copying and checking.
 	for (int k = 0; k < compc; k++)
 	{
+		ac_cnt = 0;
+
+		// Show the competitor's name;
+		cout << ">>> " << comps[k] << endl << endl;
+
 		// Copying .exe files.
 		for (int i = 0; i < probc; i++)
 		{
@@ -193,6 +207,13 @@ void cmd_config()
 		// Running and checking.
 		for (int i = 0; i < probc; i++)
 		{
+			int sub_ac_cnt = 0;
+
+			// Show the problem's name;
+			setcolor(COLOR_PROBLEMNAME);
+			cout << "Problem : " << probs[i].name << endl;
+			setcolor(COLOR_NONE);
+
 			for (int j = 1; j <= probs[i].testcase; j++)
 			{
 				// Copy .in and .out files.
@@ -203,7 +224,6 @@ void cmd_config()
 				// Running.
 				cout << "Running for testcase #" << right << setw(3) << j << "... ";
 				int starttime = clock();
-				cout << "Running " << probs[i].name << ".exe" << endl;
 				int result = runprogram("data/" + probs[i].name + ".exe", probs[i].timelimit);
 				int endtime = clock();
 
@@ -229,6 +249,7 @@ void cmd_config()
 					setcolor(COLOR_AC);
 					printf("AC  ");
 					setcolor(COLOR_NONE);
+					sub_ac_cnt++;
 				}
 				else
 				{
@@ -238,14 +259,21 @@ void cmd_config()
 				}
 
 			SHOWTIME:
-				printf("%4d ms\n", endtime - starttime);
+				cout << setw(4) << endtime - starttime << " ms\n";
 
 			END:;
 
 				// Deleting .out file.
 				remove((probs[i].name + ".out").c_str());
 			}
+
+			// Show score.
+			ac_cnt += sub_ac_cnt;
+			cout << "Sub-total : " << sub_ac_cnt << '/' << probs[i].testcase << endl << endl;
 		}
+
+		// Show total score.
+		cout << "Total : " << ac_cnt << '/' << pr_cnt << endl << endl << endl;
 
 		// Deleting .exe files.
 		for (int i = 0; i < probc; i++)
@@ -282,5 +310,9 @@ void setcolor(int color)
 	else if (color == COLOR_TLE)
 	{
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+	}
+	else if (color == COLOR_PROBLEMNAME)
+	{
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 	}
 }
