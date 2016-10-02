@@ -1,7 +1,7 @@
-/*********************************************************
- * TesterMain.cpp (c) 2016 Dev-XYS. All rights reserved. *
- * Version : 2.0.0.6                                     *
- *********************************************************/
+/********************************************************
+* TesterMain.cpp (c) 2016 Dev-XYS. All rights reserved. *
+* Version : 2.1.1.9                                     *
+********************************************************/
 
 #include <cstdio>
 #include <cstring>
@@ -13,10 +13,11 @@
 #include <ctime>
 #include <windows.h>
 #include <string>
+#include <io.h>
 
 #pragma warning (disable : 4996)
 
- // Result definitions.
+// Result definitions.
 #define RESULT_NONE -1
 #define RESULT_RE 2
 #define RESULT_TLE 3
@@ -28,6 +29,7 @@
 #define COLOR_WA 1
 #define COLOR_RE 2
 #define COLOR_TLE 3
+#define COLOR_SF 4
 
 #define COLOR_PROBLEMNAME 16
 
@@ -61,13 +63,13 @@ int main()
 		cout << "test->";
 		cin >> cmd;
 
-		if (cmd == "default")
-		{
-			//cmd_default();
-		}
-		else if (cmd == "config")
+		if (cmd == "config")
 		{
 			cmd_config();
+		}
+		else
+		{
+			cout << "No such command." << endl;
 		}
 	}
 
@@ -88,9 +90,10 @@ void copy(string src, string dest)
 	fout.close();
 }
 
-void compile(const char compiler[], string src, string dest)
+void compile(const char *compiler, string src, string dest)
 {
-	system(((string)compiler + " " + src + " -o" + dest).c_str());
+	system("echo off");
+	system(((string)compiler + ">nul 2>nul " + src + " -o" + dest).c_str());
 }
 
 int runprogram(string exef, int timelim)
@@ -243,6 +246,14 @@ void cmd_config()
 					setcolor(COLOR_NONE);
 					goto SHOWTIME;
 				}
+				if (result == RESULT_SF)
+				{
+					setcolor(COLOR_SF);
+					cout << "SF  ";
+					setcolor(COLOR_NONE);
+					cout << "---- ms\n";
+					goto END;
+				}
 
 				// Checking.
 				if (check(probs[i].name + ".out", "data/" + probs[i].name + ord + ".ans") == true)
@@ -311,6 +322,10 @@ void setcolor(int color)
 	else if (color == COLOR_TLE)
 	{
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+	}
+	else if (color == COLOR_SF)
+	{
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 	}
 	else if (color == COLOR_PROBLEMNAME)
 	{
