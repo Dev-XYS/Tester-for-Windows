@@ -1,7 +1,7 @@
 /*********************************************************
-* TesterMain.cpp (c) 2016 Dev-XYS. All rights reserved. *
-* Version : 2.0.0.6                                     *
-*********************************************************/
+ * TesterMain.cpp (c) 2016 Dev-XYS. All rights reserved. *
+ * Version : 2.0.0.6                                     *
+ *********************************************************/
 
 #include <cstdio>
 #include <cstring>
@@ -16,7 +16,7 @@
 
 #pragma warning (disable : 4996)
 
-// Result definitions.
+ // Result definitions.
 #define RESULT_NONE -1
 #define RESULT_RE 2
 #define RESULT_TLE 3
@@ -51,9 +51,9 @@ string cmd;
 
 int main()
 {
-	// Printf copyright.
-	printf("TesterMain (c) 2016 Dev-XYS. All rights reserved.\n");
-	printf("Repository URL : github.com/Dev-XYS/Tester\n\n");
+	// Print copyright.
+	cout << "TesterMain (c) 2016 Dev-XYS. All rights reserved.\n";
+	cout << "Repository URL : github.com/Dev-XYS/Tester\n\n";
 
 	while (true)
 	{
@@ -88,9 +88,9 @@ void copy(string src, string dest)
 	fout.close();
 }
 
-void compile(string src)
+void compile(const char compiler[], string src, string dest)
 {
-
+	system(((string)compiler + " " + src + " -o" + dest).c_str());
 }
 
 int runprogram(string exef, int timelim)
@@ -167,10 +167,10 @@ void cmd_config()
 	string conf, comps[50];
 	int probc, compc, pr_cnt = 0, ac_cnt;
 	problem probs[10];
-	char ord[10];
+	char compiler[128], ord[10];
 	ifstream coni;
 
-	printf("Please insert the config file name:\n");
+	cout << "Please insert the config file name:\n";
 	cin >> conf;
 	cout << endl;
 
@@ -178,6 +178,7 @@ void cmd_config()
 	coni.open(conf);
 
 	// Read in problems and competitors.
+	coni.getline(compiler, 128);
 	coni >> probc;
 	for (int i = 0; i < probc; i++)
 	{
@@ -201,7 +202,7 @@ void cmd_config()
 		// Copying .exe files.
 		for (int i = 0; i < probc; i++)
 		{
-			copy("src/" + comps[k] + '/' + probs[i].name + ".exe", "data/" + probs[i].name + ".exe");
+			compile(compiler, "src/" + comps[k] + '/' + probs[i].name + ".cpp", probs[i].name + ".exe");
 		}
 
 		// Running and checking.
@@ -224,7 +225,7 @@ void cmd_config()
 				// Running.
 				cout << "Running for testcase #" << right << setw(3) << j << "... ";
 				int starttime = clock();
-				int result = runprogram("data/" + probs[i].name + ".exe", probs[i].timelimit);
+				int result = runprogram(probs[i].name + ".exe", probs[i].timelimit);
 				int endtime = clock();
 
 				if (result == RESULT_TLE)
@@ -247,14 +248,14 @@ void cmd_config()
 				if (check(probs[i].name + ".out", "data/" + probs[i].name + ord + ".ans") == true)
 				{
 					setcolor(COLOR_AC);
-					printf("AC  ");
+					cout << "AC  ";
 					setcolor(COLOR_NONE);
 					sub_ac_cnt++;
 				}
 				else
 				{
 					setcolor(COLOR_WA);
-					printf("WA  ");
+					cout << "WA  ";
 					setcolor(COLOR_NONE);
 				}
 
@@ -278,7 +279,7 @@ void cmd_config()
 		// Deleting .exe files.
 		for (int i = 0; i < probc; i++)
 		{
-			remove(("data/" + probs[i].name + ".exe").c_str());
+			remove((probs[i].name + ".exe").c_str());
 		}
 	}
 
