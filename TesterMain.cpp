@@ -1,6 +1,6 @@
 /********************************************************
 * TesterMain.cpp (c) 2016 Dev-XYS. All rights reserved. *
-* Version : 2.2.0.10                                    *
+* Version : 2.3.0.13                                    *
 ********************************************************/
 
 #include <cstdio>
@@ -14,6 +14,7 @@
 #include <windows.h>
 #include <string>
 #include <io.h>
+#include <algorithm>
 
 #pragma warning (disable : 4996)
 
@@ -42,14 +43,23 @@ struct problem
 	int testcase, timelimit;
 };
 
+// Represent a result.
+struct result
+{
+	string name;
+	int score;
+}comp_res[100];
+
 // Command functions.
 void cmd_config();
+void cmd_resprt();
 
 // Other functions.
 void setcolor(int color);
 
 // Variables.
 string cmd;
+int compc;
 
 int main()
 {
@@ -66,6 +76,10 @@ int main()
 		if (cmd == "config")
 		{
 			cmd_config();
+		}
+		else if (cmd == "resprt")
+		{
+			cmd_resprt();
 		}
 		else
 		{
@@ -101,8 +115,7 @@ void copy(string src, string dest)
 
 void compile(const char *compiler, string src, string dest)
 {
-	system("echo off");
-	system(((string)compiler + ">nul 2>nul " + src + " -o" + dest).c_str());
+	system(((string)compiler + " " + src + " -o" + dest).c_str());
 }
 
 int runprogram(string exef, int timelim)
@@ -178,9 +191,9 @@ bool check(string src, string dest)
 void cmd_config()
 {
 	string conf, comps[50];
-	int probc, compc, pr_cnt = 0, ac_cnt;
+	int probc, pr_cnt = 0, ac_cnt;
 	problem probs[10];
-	char compiler[128], ord[10];
+	char compiler[256], ord[10];
 	ifstream coni;
 
 	cout << "Please insert the config file name:\n";
@@ -218,8 +231,12 @@ void cmd_config()
 		// Copying .exe files.
 		for (int i = 0; i < probc; i++)
 		{
+			setcolor(COLOR_PROBLEMNAME);
+			cout << "Compiling " << probs[i].name << "..." << endl;
+			setcolor(COLOR_NONE);
 			compile(compiler, "src/" + comps[k] + '/' + probs[i].name + ".cpp", probs[i].name + ".exe");
 		}
+		cout << endl;
 
 		// Running and checking.
 		for (int i = 0; i < probc; i++)
@@ -305,6 +322,10 @@ void cmd_config()
 		{
 			remove((probs[i].name + ".exe").c_str());
 		}
+
+		// Record scores.
+		comp_res[k].name = comps[k];
+		comp_res[k].score = ac_cnt;
 	}
 
 	// Deleting .in files.
@@ -315,6 +336,22 @@ void cmd_config()
 
 	// Enable Windows Error Reporting.
 	switch_wer(0);
+}
+
+inline bool _result_cmp(const result &x, const result &y)
+{
+	return x.score > y.score;
+}
+
+void cmd_resprt()
+{
+	sort(comp_res, comp_res + compc, _result_cmp);
+	cout << "Sorted Result:" << endl;
+	for (int i = 0; i < compc; i++)
+	{
+		cout << left << setw(20) << comp_res[i].name << right << setw(4) << comp_res[i].score << endl;
+	}
+	cout << endl;
 }
 
 void setcolor(int color)
