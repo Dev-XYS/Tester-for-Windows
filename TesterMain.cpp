@@ -1,6 +1,6 @@
 /********************************************************
 * TesterMain.cpp (c) 2016 Dev-XYS. All rights reserved. *
-* Version : 2.1.1.9                                     *
+* Version : 2.2.0.10                                    *
 ********************************************************/
 
 #include <cstdio>
@@ -76,6 +76,15 @@ int main()
 	return 0;
 }
 
+void switch_wer(DWORD val)
+{
+	HKEY key;
+	RegOpenKeyEx(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\", NULL, KEY_ALL_ACCESS, &key);
+	RegSetValueEx(key, "Disabled", NULL, REG_DWORD, (LPBYTE)&val, sizeof(val));
+	RegSetValueEx(key, "DontShowUI", NULL, REG_DWORD, (LPBYTE)&val, sizeof(val));
+	RegCloseKey(key);
+}
+
 void copy(string src, string dest)
 {
 	ofstream fout;
@@ -107,12 +116,13 @@ int runprogram(string exef, int timelim)
 	{
 		return RESULT_SF;
 	}
-	if (WaitForSingleObject(pi.hProcess, timelim) == WAIT_TIMEOUT)
+	DWORD waitres = WaitForSingleObject(pi.hProcess, timelim);
+	if (waitres == WAIT_TIMEOUT)
 	{
 		TerminateProcess(pi.hProcess, 0);
 		return RESULT_TLE;
 	}
-	unsigned long ret;
+	unsigned long ret = 0;
 	GetExitCodeProcess(pi.hProcess, &ret);
 	return ret == 0 ? RESULT_NONE : RESULT_RE;
 }
@@ -193,6 +203,9 @@ void cmd_config()
 	{
 		coni >> comps[i];
 	}
+
+	// Disable Windows Error Reporting.
+	switch_wer(1);
 
 	// Copying and checking.
 	for (int k = 0; k < compc; k++)
@@ -299,6 +312,9 @@ void cmd_config()
 	{
 		remove((probs[i].name + ".in").c_str());
 	}
+
+	// Enable Windows Error Reporting.
+	switch_wer(0);
 }
 
 void setcolor(int color)
