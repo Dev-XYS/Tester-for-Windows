@@ -1,6 +1,6 @@
 /********************************************************
 * TesterMain.cpp (c) 2016 Dev-XYS. All rights reserved. *
-* Version : 2.3.0.13                                    *
+* Version : 2.3.1.14                                    *
 ********************************************************/
 
 #include <cstdio>
@@ -104,8 +104,8 @@ void copy(string src, string dest)
 	ofstream fout;
 	ifstream fin;
 
-	fin.open(src, ios::binary);
-	fout.open(dest, ios::binary);
+	fin.open(src.c_str(), ios::binary);
+	fout.open(dest.c_str(), ios::binary);
 
 	fout << fin.rdbuf();
 
@@ -145,8 +145,8 @@ bool check(string src, string dest)
 	ifstream fs, fd;
 	char temps[1024], tempd[1024];
 
-	fs.open(src);
-	fd.open(dest);
+	fs.open(src.c_str());
+	fd.open(dest.c_str());
 
 	while (!fs.eof() && !fd.eof())
 	{
@@ -201,7 +201,7 @@ void cmd_config()
 	cout << endl;
 
 	// Open the config file.
-	coni.open(conf);
+	coni.open(conf.c_str());
 
 	// Read in problems and competitors.
 	coni.getline(compiler, 128);
