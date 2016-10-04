@@ -1,6 +1,6 @@
 /********************************************************
 * TesterMain.cpp (c) 2016 Dev-XYS. All rights reserved. *
-* Version : 2.3.1.14                                    *
+* Version : 2.3.3.16                                    *
 ********************************************************/
 
 #include <cstdio>
@@ -25,14 +25,14 @@
 #define RESULT_SF 4
 
 // Console color definitions.
-#define COLOR_NONE -1
-#define COLOR_AC 0
-#define COLOR_WA 1
-#define COLOR_RE 2
-#define COLOR_TLE 3
-#define COLOR_SF 4
-
-#define COLOR_PROBLEMNAME 16
+#define COLOR_NONE FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE
+#define COLOR_HEADING FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY
+#define COLOR_PROBLEMNAME FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY
+#define COLOR_AC FOREGROUND_GREEN | FOREGROUND_INTENSITY
+#define COLOR_WA FOREGROUND_RED | FOREGROUND_INTENSITY
+#define COLOR_RE FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY
+#define COLOR_TLE FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY
+#define COLOR_SF FOREGROUND_BLUE | FOREGROUND_INTENSITY
 
 using namespace std;
 
@@ -53,9 +53,10 @@ struct result
 // Command functions.
 void cmd_config();
 void cmd_resprt();
+void cmd_getcpl();
 
 // Other functions.
-void setcolor(int color);
+void setcolor(WORD color);
 
 // Variables.
 string cmd;
@@ -80,6 +81,10 @@ int main()
 		else if (cmd == "resprt")
 		{
 			cmd_resprt();
+		}
+		else if (cmd == "getcpl")
+		{
+			cmd_getcpl();
 		}
 		else
 		{
@@ -204,7 +209,7 @@ void cmd_config()
 	coni.open(conf.c_str());
 
 	// Read in problems and competitors.
-	coni.getline(compiler, 128);
+	coni.getline(compiler, 256);
 	coni >> probc;
 	for (int i = 0; i < probc; i++)
 	{
@@ -354,34 +359,16 @@ void cmd_resprt()
 	cout << endl;
 }
 
-void setcolor(int color)
+void cmd_getcpl()
 {
-	if (color == COLOR_NONE)
-	{
-		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
-	}
-	else if (color == COLOR_AC)
-	{
-		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_GREEN | FOREGROUND_INTENSITY);
-	}
-	else if (color == COLOR_WA)
-	{
-		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_INTENSITY);
-	}
-	else if (color == COLOR_RE)
-	{
-		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
-	}
-	else if (color == COLOR_TLE)
-	{
-		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-	}
-	else if (color == COLOR_SF)
-	{
-		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-	}
-	else if (color == COLOR_PROBLEMNAME)
-	{
-		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-	}
+	setcolor(COLOR_HEADING);
+	cout << "\nAll competitors in directory /src:\n\n";
+	setcolor(COLOR_NONE);
+	system("dir /A:D /B src");
+	cout << endl;
+}
+
+void setcolor(WORD color)
+{
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
 }
