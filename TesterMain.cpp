@@ -1,6 +1,6 @@
 /********************************************************
 * TesterMain.cpp (c) 2016 Dev-XYS. All rights reserved. *
-* Version : 2.3.3.16                                    *
+* Version : 2.4.0.19                                    *
 ********************************************************/
 
 #include <cstdio>
@@ -20,6 +20,8 @@
 
 // Result definitions.
 #define RESULT_NONE -1
+#define RESULT_AC 0
+#define RESULT_WA 1
 #define RESULT_RE 2
 #define RESULT_TLE 3
 #define RESULT_SF 4
@@ -43,7 +45,13 @@ struct problem
 	int testcase, timelimit;
 };
 
-// Represent a result.
+// Represent a result of a single testcase.
+struct case_result
+{
+	int res, time;
+};
+
+// Represent a result of a single competitor.
 struct result
 {
 	string name;
@@ -51,12 +59,13 @@ struct result
 }comp_res[100];
 
 // Command functions.
-void cmd_config();
-void cmd_resprt();
-void cmd_getcpl();
+void cmd_conf();
+void cmd_res();
+void cmd_cpl();
+void cmd_oc();
 
 // Other functions.
-void setcolor(WORD color);
+void colorprint(string con, WORD color);
 
 // Variables.
 string cmd;
@@ -74,17 +83,21 @@ int main()
 		cout << "test->";
 		cin >> cmd;
 
-		if (cmd == "config")
+		if (cmd == "conf")
 		{
-			cmd_config();
+			cmd_conf();
 		}
-		else if (cmd == "resprt")
+		else if (cmd == "res")
 		{
-			cmd_resprt();
+			cmd_res();
 		}
-		else if (cmd == "getcpl")
+		else if (cmd == "cpl")
 		{
-			cmd_getcpl();
+			cmd_cpl();
+		}
+		else if (cmd == "oc")
+		{
+			cmd_oc();
 		}
 		else
 		{
@@ -93,6 +106,27 @@ int main()
 	}
 
 	return 0;
+}
+
+void read_std_info(ifstream &coni, char *compilercmd, int &probc, int &pr_cnt, problem *probs)
+{
+	// Read in compiler command, problems and competitors.
+	coni.getline(compilercmd, 256);
+	coni >> probc;
+	for (int i = 0; i < probc; i++)
+	{
+		coni >> probs[i].name >> probs[i].testcase >> probs[i].timelimit;
+		pr_cnt += probs[i].testcase;
+	}
+}
+
+void read_comp_info(ifstream &coni, int &compc, string *comps)
+{
+	coni >> compc;
+	for (int i = 0; i < compc; i++)
+	{
+		coni >> comps[i];
+	}
 }
 
 void switch_wer(DWORD val)
@@ -193,12 +227,76 @@ bool check(string src, string dest)
 	return true;
 }
 
-void cmd_config()
+case_result check_case(string comp, problem prob, int testo)
+{
+	char ord[10];
+	itoa(testo, ord, 10);
+
+	// Copy .in and .out files.
+	copy("data/" + prob.name + ord + ".in", prob.name + ".in");
+
+	// Running.
+	int starttime = clock();
+	int cres = runprogram(prob.name + ".exe", prob.timelimit);
+	int endtime = clock();
+
+	if (cres == RESULT_TLE)
+	{
+		return case_result{ RESULT_TLE, -1 };
+	}
+	if (cres == RESULT_RE)
+	{
+		return case_result{ RESULT_RE, endtime - starttime };
+	}
+	if (cres == RESULT_SF)
+	{
+		return case_result{ RESULT_SF, -1 };
+	}
+
+	// Checking.
+	if (check(prob.name + ".out", "data/" + prob.name + ord + ".ans") == true)
+	{
+		return case_result{ RESULT_AC, endtime - starttime };
+	}
+	else
+	{
+		return case_result{ RESULT_WA, endtime - starttime };
+	}
+}
+
+void show_one_res(case_result cres)
+{
+	switch (cres.res)
+	{
+	case RESULT_AC:
+		colorprint("AC  ", COLOR_AC);
+		cout << right << setw(4) << cres.time << " ms\n";
+		break;
+	case RESULT_WA:
+		colorprint("WA  ", COLOR_WA);
+		cout << right << setw(4) << cres.time << " ms\n";
+		break;
+	case RESULT_RE:
+		colorprint("RE  ", COLOR_RE);
+		cout << right << setw(4) << cres.time << " ms\n";
+		break;
+	case RESULT_TLE:
+		colorprint("TLE ", COLOR_TLE);
+		cout << "---- ms\n";
+		break;
+	case RESULT_SF:
+		colorprint("SF  ", COLOR_SF);
+		cout << "---- ms\n";
+		break;
+	}
+}
+
+void cmd_conf()
 {
 	string conf, comps[50];
 	int probc, pr_cnt = 0, ac_cnt;
 	problem probs[10];
-	char compiler[256], ord[10];
+	char compiler[256];
 	ifstream coni;
 
 	cout << "Please insert the config file name:\n";
@@ -208,19 +306,11 @@ void cmd_config()
 	// Open the config file.
 	coni.open(conf.c_str());
 
-	// Read in problems and competitors.
-	coni.getline(compiler, 256);
-	coni >> probc;
-	for (int i = 0; i < probc; i++)
-	{
-		coni >> probs[i].name >> probs[i].testcase >> probs[i].timelimit;
-		pr_cnt += probs[i].testcase;
-	}
-	coni >> compc;
-	for (int i = 0; i < compc; i++)
-	{
-		coni >> comps[i];
-	}
+	// Read info.
+	read_std_info(coni, compiler, probc, pr_cnt, probs);
+	read_comp_info(coni, compc, comps);
+
+	coni.close();
 
 	// Disable Windows Error Reporting.
 	switch_wer(1);
@@ -236,9 +326,7 @@ void cmd_config()
 		// Copying .exe files.
 		for (int i = 0; i < probc; i++)
 		{
-			setcolor(COLOR_PROBLEMNAME);
-			cout << "Compiling " << probs[i].name << "..." << endl;
-			setcolor(COLOR_NONE);
+			colorprint("Compiling " + probs[i].name + "...\n", COLOR_PROBLEMNAME);
 			compile(compiler, "src/" + comps[k] + '/' + probs[i].name + ".cpp", probs[i].name + ".exe");
 		}
 		cout << endl;
@@ -249,69 +337,23 @@ void cmd_config()
 			int sub_ac_cnt = 0;
 
 			// Show the problem's name;
-			setcolor(COLOR_PROBLEMNAME);
-			cout << "Problem : " << probs[i].name << endl;
-			setcolor(COLOR_NONE);
+			colorprint("Problem : " + probs[i].name + '\n', COLOR_PROBLEMNAME);
 
 			for (int j = 1; j <= probs[i].testcase; j++)
 			{
-				// Copy .in and .out files.
-				itoa(j, ord, 10);
-
-				copy("data/" + probs[i].name + ord + ".in", probs[i].name + ".in");
-
 				// Running.
 				cout << "Running for testcase #" << right << setw(3) << j << "... ";
-				int starttime = clock();
-				int result = runprogram(probs[i].name + ".exe", probs[i].timelimit);
-				int endtime = clock();
+				case_result cres = check_case(comps[k], probs[i], j);
 
-				if (result == RESULT_TLE)
+				if (cres.res == RESULT_AC)
 				{
-					setcolor(COLOR_TLE);
-					cout << "TLE ";
-					setcolor(COLOR_NONE);
-					cout << "---- ms\n";
-					goto END;
-				}
-				if (result == RESULT_RE)
-				{
-					setcolor(COLOR_RE);
-					cout << "RE  ";
-					setcolor(COLOR_NONE);
-					goto SHOWTIME;
-				}
-				if (result == RESULT_SF)
-				{
-					setcolor(COLOR_SF);
-					cout << "SF  ";
-					setcolor(COLOR_NONE);
-					cout << "---- ms\n";
-					goto END;
-				}
-
-				// Checking.
-				if (check(probs[i].name + ".out", "data/" + probs[i].name + ord + ".ans") == true)
-				{
-					setcolor(COLOR_AC);
-					cout << "AC  ";
-					setcolor(COLOR_NONE);
 					sub_ac_cnt++;
 				}
-				else
-				{
-					setcolor(COLOR_WA);
-					cout << "WA  ";
-					setcolor(COLOR_NONE);
-				}
-
-			SHOWTIME:
-				cout << setw(4) << endtime - starttime << " ms\n";
-
-			END:;
+				show_one_res(cres);
 
 				// Deleting .out file.
-				remove((probs[i].name + ".out").c_str());
+				while (access((probs[i].name + ".out").c_str(), 0) == 0)
+					remove((probs[i].name + ".out").c_str());
 			}
 
 			// Show score.
@@ -348,27 +390,109 @@ inline bool _result_cmp(const result &x, const result &y)
 	return x.score > y.score;
 }
 
-void cmd_resprt()
+void cmd_res()
 {
 	sort(comp_res, comp_res + compc, _result_cmp);
 	cout << "Sorted Result:" << endl;
 	for (int i = 0; i < compc; i++)
 	{
-		cout << left << setw(20) << comp_res[i].name << right << setw(4) << comp_res[i].score << endl;
+		cout << left << setw(25) << comp_res[i].name << right << setw(4) << comp_res[i].score << endl;
 	}
 	cout << endl;
 }
 
-void cmd_getcpl()
+void cmd_cpl()
 {
-	setcolor(COLOR_HEADING);
-	cout << "\nAll competitors in directory /src:\n\n";
-	setcolor(COLOR_NONE);
+	colorprint("\nAll competitors in directory /src:\n\n", COLOR_HEADING);
 	system("dir /A:D /B src");
 	cout << endl;
 }
 
-void setcolor(WORD color)
+void cmd_oc()
+{
+	string conf, comps;
+	int probc, pr_cnt = 0, ac_cnt = 0;
+	problem probs[10];
+	char compiler[256];
+	ifstream coni;
+
+	cout << "Please insert the config file name:\n";
+	cin >> conf;
+	cout << "Please insert the competitor's name:\n";
+	cin >> comps;
+	cout << endl;
+
+	// Open the config file.
+	coni.open(conf.c_str());
+
+	// Read info.
+	read_std_info(coni, compiler, probc, pr_cnt, probs);
+
+	coni.close();
+
+	// Disable Windows Error Reporting.
+	switch_wer(1);
+
+	// Inside the loop of 'k'.
+
+	// Show the competitor's name;
+	cout << ">>> " << comps << endl << endl;
+
+	// Copying .exe files.
+	for (int i = 0; i < probc; i++)
+	{
+		colorprint("Compiling " + probs[i].name + "...\n", COLOR_PROBLEMNAME);
+		compile(compiler, "src/" + comps + '/' + probs[i].name + ".cpp", probs[i].name + ".exe");
+	}
+	cout << endl;
+
+	// Running and checking.
+	for (int i = 0; i < probc; i++)
+	{
+		int sub_ac_cnt = 0;
+
+		// Show the problem's name;
+		colorprint("Problem : " + probs[i].name + '\n', COLOR_PROBLEMNAME);
+
+		for (int j = 1; j <= probs[i].testcase; j++)
+		{
+			// Running.
+			cout << "Running for testcase #" << right << setw(3) << j << "... ";
+			case_result cres = check_case(comps, probs[i], j);
+
+			if (cres.res == RESULT_AC)
+			{
+				sub_ac_cnt++;
+			}
+			show_one_res(cres);
+
+			// Deleting .out file.
+			while (access((probs[i].name + ".out").c_str(), 0) == 0)
+				remove((probs[i].name + ".out").c_str());
+		}
+
+		// Show score.
+		ac_cnt += sub_ac_cnt;
+		cout << "Sub-total : " << sub_ac_cnt << '/' << probs[i].testcase << endl << endl;
+	}
+
+	// Show total score.
+	cout << "Total : " << ac_cnt << '/' << pr_cnt << endl << endl << endl;
+
+	// Deleting .exe and .in files.
+	for (int i = 0; i < probc; i++)
+	{
+		remove((probs[i].name + ".exe").c_str());
+		remove((probs[i].name + ".in").c_str());
+	}
+
+	// Enable Windows Error Reporting.
+	switch_wer(0);
+}
+
+void colorprint(string con, WORD color)
 {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+	cout << con;
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), COLOR_NONE);
 }
