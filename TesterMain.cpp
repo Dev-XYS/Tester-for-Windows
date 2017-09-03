@@ -1,7 +1,7 @@
-/********************************************************
-* TesterMain.cpp (c) 2016 Dev-XYS. All rights reserved. *
-* Version : 2.4.0.19                                    *
-********************************************************/
+/*************************************************************
+* TesterMain.cpp (c) 2016~2017 Dev-XYS. All rights reserved. *
+* Version : 2.4.1.20                                         *
+*************************************************************/
 
 #include <cstdio>
 #include <cstring>
@@ -75,7 +75,7 @@ int main()
 {
 	// Print copyright.
 	cout << "TesterMain (c) 2016 Dev-XYS. All rights reserved.\n";
-	cout << "Repository URL : github.com/Dev-XYS/Tester\n\n";
+	cout << "Repository URL : github.com/Dev-XYS/Tester-for-Windows\n\n";
 
 	while (true)
 	{
